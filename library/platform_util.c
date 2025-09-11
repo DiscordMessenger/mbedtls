@@ -216,7 +216,25 @@ void (*mbedtls_test_hook_test_fail)(const char *, int, const char *);
 #endif /* MBEDTLS_TEST_HOOKS */
 
 #if defined(MBEDTLS_HAVE_TIME) && !defined(MBEDTLS_PLATFORM_MS_TIME_ALT)
+#ifdef OLD_IPHONE
 
+// IPROGRAM HACK
+#include <mach/mach_time.h>
+
+mbedtls_ms_time_t mbedtls_ms_time(void)
+{
+    static mach_timebase_info_data_t timebase = {0,0};
+    if (timebase.denom == 0) {
+        mach_timebase_info(&timebase);
+    }
+    uint64_t t = mach_absolute_time();
+    uint64_t nanoseconds = t * timebase.numer / timebase.denom;
+	
+	// but we actually need milliseconds so
+	return nanoseconds / 1000000;
+}
+
+#else
 #include <time.h>
 #if !defined(_WIN32) && \
     (defined(unix) || defined(__unix) || defined(__unix__) || \
@@ -260,4 +278,5 @@ mbedtls_ms_time_t mbedtls_ms_time(void)
 #else
 #error "No mbedtls_ms_time available"
 #endif
+#endif /* OLD_IPHONE */
 #endif /* MBEDTLS_HAVE_TIME && !MBEDTLS_PLATFORM_MS_TIME_ALT */
